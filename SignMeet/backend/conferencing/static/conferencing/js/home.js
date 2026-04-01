@@ -36,6 +36,141 @@ let client = null;
         return data;
     }
 
+    function connectWebSocket() {
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+            return ws;
+        }
+
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        ws = new WebSocket(wsProtocol + window.location.host + '/ws/sign_detection/');
+        ws.onopen = () => console.log("WebSocket connected for sign detection");
+        ws.onmessage = (event) => {
+            const translation = event.data;
+            subtitle.textContent = `Translation: ${translation}`;
+            console.log("Received translation:", translation);
+        };
+        ws.onclose = () => {
+            console.log("WebSocket connection closed");
+            ws = null;
+        };
+        ws.onerror = (error) => console.error("WebSocket error:", error);
+        return ws;
+    }
+
+    function waitForWebSocketOpen(socketInstance, timeoutMs = 4000) {
+        return new Promise((resolve, reject) => {
+            if (!socketInstance) {
+                reject(new Error("WebSocket could not be created."));
+                return;
+            }
+
+            if (socketInstance.readyState === WebSocket.OPEN) {
+                resolve(socketInstance);
+                return;
+            }
+
+            const timeoutId = setTimeout(() => {
+                cleanup();
+                reject(new Error("WebSocket connection timed out."));
+            }, timeoutMs);
+
+            const handleOpen = () => {
+                cleanup();
+                resolve(socketInstance);
+            };
+
+            const handleClose = () => {
+                cleanup();
+                reject(new Error("WebSocket connection closed before opening."));
+            };
+
+            const handleError = () => {
+                cleanup();
+                reject(new Error("WebSocket connection failed."));
+            };
+
+            function cleanup() {
+                clearTimeout(timeoutId);
+                socketInstance.removeEventListener('open', handleOpen);
+                socketInstance.removeEventListener('close', handleClose);
+                socketInstance.removeEventListener('error', handleError);
+            }
+
+            socketInstance.addEventListener('open', handleOpen);
+            socketInstance.addEventListener('close', handleClose);
+            socketInstance.addEventListener('error', handleError);
+        });
+    }
+
+    function getDeviceErrorMessage(err, deviceName) {
+        if (!err) {
+            return `${deviceName} is unavailable right now.`;
+        }
+
+        if (err.code === "NOT_READABLE" || err.name === "NotReadableError") {
+            return `${deviceName} is already in use by another app or browser tab. Close the other app and try again.`;
+        }
+
+        if (err.code === "PERMISSION_DENIED" || err.name === "NotAllowedError") {
+            return `${deviceName} permission was blocked. Please allow browser access and try again.`;
+        }
+
+        return `${deviceName} error: ${err.message}`;
+    }
+
+    function attachLocalVideo(track, userName) {
+        let localVideoContainer = document.getElementById(`user-container-${uid}`);
+
+        if (!localVideoContainer) {
+            localVideoContainer = document.createElement("div");
+            localVideoContainer.className = "user-video-container";
+            localVideoContainer.id = `user-container-${uid}`;
+
+            localVideoElement = document.createElement("video");
+            localVideoElement.id = `user-video-${uid}`;
+            localVideoElement.className = "video-element";
+            localVideoElement.muted = true;
+            localVideoElement.autoplay = true;
+
+            const nameLabel = document.createElement("div");
+            nameLabel.className = "user-name-label";
+            nameLabel.textContent = userName;
+
+            localVideoContainer.appendChild(localVideoElement);
+            localVideoContainer.appendChild(nameLabel);
+            videoContainer.appendChild(localVideoContainer);
+        } else {
+            localVideoElement = document.getElementById(`user-video-${uid}`);
+        }
+
+        const stream = new MediaStream();
+        stream.addTrack(track.getMediaStreamTrack());
+        localVideoElement.srcObject = stream;
+        track._videoElement = localVideoElement;
+        return localVideoElement.play();
+    }
+
+    async function enableCamera(userName) {
+        const videoTrack = await AgoraRTC.createCameraVideoTrack({
+            encoderConfig: { width: 229, height: 229, frameRate: 15, bitrateMin: 300, bitrateMax: 500 }
+        });
+        console.log("Video track created:", videoTrack);
+
+        const videoStreamTrack = videoTrack.getMediaStreamTrack();
+        if (videoStreamTrack.readyState !== "live") {
+            videoTrack.stop();
+            videoTrack.close();
+            throw new Error("Video track is not live.");
+        }
+
+        await attachLocalVideo(videoTrack, userName);
+        await client.publish(videoTrack);
+        console.log("Video track published");
+        localTracks.videoTrack = videoTrack;
+        camBtn.textContent = "Turn Off Camera";
+        detectBtn.disabled = false;
+    }
+
     const form = document.getElementById('roomForm');
     form.onsubmit = async function(event) {
         event.preventDefault();
@@ -59,62 +194,22 @@ let client = null;
                 await client.join(APP_ID, roomName, token, uid);
                 console.log("Channel joined with UID:", uid);
 
-                // Create the camera track with the original dimensions for processing
-                localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack({
-                    encoderConfig: { width: 229, height: 229, frameRate: 15, bitrateMin: 300, bitrateMax: 500 }
-                });
-                console.log("Video track created:", localTracks.videoTrack);
-                const videoStreamTrack = localTracks.videoTrack.getMediaStreamTrack();
-                if (videoStreamTrack.readyState !== "live") {
-                    console.warn("Video track is not live. ReadyState:", videoStreamTrack.readyState);
-                    alert("Video track is not live.");
-                    localTracks.videoTrack = null;
-                }
-
-                if (localTracks.videoTrack) {
-                    // Create a container div for video and name
-                    const localVideoContainer = document.createElement("div");
-                    localVideoContainer.className = "user-video-container";
-                    localVideoContainer.id = `user-container-${uid}`;
-                    
-                    // Create the video element
-                    localVideoElement = document.createElement("video");
-                    localVideoElement.id = `user-video-${uid}`;
-                    localVideoElement.className = "video-element";
-                    localVideoElement.muted = true;
-                    localVideoElement.autoplay = true;
-                    
-                    // Create name label
-                    const nameLabel = document.createElement("div");
-                    nameLabel.className = "user-name-label";
-                    nameLabel.textContent = userName;
-                    
-                    // Add video and name to container
-                    localVideoContainer.appendChild(localVideoElement);
-                    localVideoContainer.appendChild(nameLabel);
-                    
-                    // Add container to video container
-                    videoContainer.appendChild(localVideoContainer);
-                    
-                    const stream = new MediaStream();
-                    stream.addTrack(localTracks.videoTrack.getMediaStreamTrack());
-                    localVideoElement.srcObject = stream;
-                    await localVideoElement.play().catch(err => {
-                        console.error("Video play failed:", err);
-                        alert("Failed to play video: " + err.message);
-                    });
-                    console.log("Video element playing, currentTime:", localVideoElement.currentTime);
-                    localTracks.videoTrack._videoElement = localVideoElement;
-                    await client.publish(localTracks.videoTrack);
-                    console.log("Video track published");
-                }
-
                 title.style.display = 'none'; // Hide the title
                 joinSection.style.display = 'none';
                 roomSection.style.display = 'block';
                 camBtn.disabled = false;
                 micBtn.disabled = false;
-                detectBtn.disabled = !localTracks.videoTrack;
+                detectBtn.disabled = true;
+                camBtn.textContent = "Turn On Camera";
+                micBtn.textContent = "Turn On Mic";
+                connectWebSocket();
+
+                try {
+                    await enableCamera(userName);
+                } catch (cameraError) {
+                    console.warn("Camera was unavailable during join:", cameraError);
+                    alert(`Joined room without camera. ${getDeviceErrorMessage(cameraError, "Camera")}`);
+                }
             } catch (err) {
                 console.error("Failed to join room:", err);
                 alert("Failed to join room: " + err.message + ". Check token generation or permissions.");
@@ -162,58 +257,10 @@ let client = null;
         console.log("Camera button clicked, current state:", localTracks.videoTrack?.enabled);
         if (!localTracks.videoTrack) {
             try {
-                localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack({
-                    encoderConfig: { width: 229, height: 229, frameRate: 15, bitrateMin: 300, bitrateMax: 500 }
-                });
-                console.log("Video track created:", localTracks.videoTrack);
-                const videoStreamTrack = localTracks.videoTrack.getMediaStreamTrack();
-                if (videoStreamTrack.readyState !== "live") {
-                    console.warn("Video track is not live. ReadyState:", videoStreamTrack.readyState);
-                    alert("Video track is not live.");
-                    localTracks.videoTrack = null;
-                    return;
-                }
-                
-                // Create a container div for video and name
-                const localVideoContainer = document.createElement("div");
-                localVideoContainer.className = "user-video-container";
-                localVideoContainer.id = `user-container-${uid}`;
-                
-                // Create the video element
-                localVideoElement = document.createElement("video");
-                localVideoElement.id = `user-video-${uid}`;
-                localVideoElement.className = "video-element";
-                localVideoElement.muted = true;
-                localVideoElement.autoplay = true;
-                
-                // Create name label
-                const nameLabel = document.createElement("div");
-                nameLabel.className = "user-name-label";
-                nameLabel.textContent = window.currentUserName || "Me";
-                
-                // Add video and name to container
-                localVideoContainer.appendChild(localVideoElement);
-                localVideoContainer.appendChild(nameLabel);
-                
-                // Add container to video container
-                videoContainer.appendChild(localVideoContainer);
-                
-                const stream = new MediaStream();
-                stream.addTrack(localTracks.videoTrack.getMediaStreamTrack());
-                localVideoElement.srcObject = stream;
-                await localVideoElement.play().catch(err => {
-                    console.error("Video play failed:", err);
-                    alert("Failed to play video: " + err.message);
-                });
-                console.log("Video element playing, currentTime:", localVideoElement.currentTime);
-                localTracks.videoTrack._videoElement = localVideoElement;
-                await client.publish(localTracks.videoTrack);
-                console.log("Video track published");
-                camBtn.textContent = "Turn Off Camera";
-                detectBtn.disabled = false;
+                await enableCamera(window.currentUserName || "Me");
             } catch (err) {
                 console.error("Failed to create or publish video track:", err);
-                alert("Camera access or publish failed: " + err.message);
+                alert(getDeviceErrorMessage(err, "Camera"));
                 return;
             }
         } else {
@@ -270,10 +317,6 @@ let client = null;
             alert("No video track or feed available.");
             return;
         }
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            alert("WebSocket connection not established. Try rejoining the call.");
-            return;
-        }
 
         if (isDetecting) {
             isDetecting = false;
@@ -284,10 +327,18 @@ let client = null;
             return;
         }
 
-        isDetecting = true;
-        detectBtn.textContent = "Stop Detection";
-        subtitle.style.display = 'block';
-        detectSigns();
+        connectWebSocket();
+        waitForWebSocketOpen(ws)
+            .then(() => {
+                isDetecting = true;
+                detectBtn.textContent = "Stop Detection";
+                subtitle.style.display = 'block';
+                detectSigns();
+            })
+            .catch((socketError) => {
+                console.error("WebSocket was not ready:", socketError);
+                alert("WebSocket connection could not be established. Please try again.");
+            });
     };
 
     function detectSigns() {
@@ -399,13 +450,4 @@ let client = null;
         if (container) container.remove();
     }
 
-    // WebSocket setup
-    ws = new WebSocket('ws://' + window.location.host + '/ws/sign_detection/');
-    ws.onopen = () => console.log("WebSocket connected for sign detection");
-    ws.onmessage = (event) => {
-        const translation = event.data;
-        subtitle.textContent = `Translation: ${translation}`;
-        console.log("Received translation:", translation);
-    };
-    ws.onclose = () => console.log("WebSocket connection closed");
-    ws.onerror = (error) => console.error("WebSocket error:", error);
+    connectWebSocket();

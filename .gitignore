@@ -1,20 +1,59 @@
-node_modules
-package-lock.json
-venv
-backend/SignMeet/__pycache__/
+# Python
 __pycache__/
-SignMeet/backend/SignMeet/__pycache__/
-SignMeet/backend/conferencing/__pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
-.Python
-*.so
-*.egg
-*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Django / local databases
+db.sqlite3
+*.sqlite3
+
+# Frontend / Node
+node_modules/
 dist/
 build/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and editor files
+.env
+.env.*
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# ML model weights and generated artifacts
+*.pth
+*.h5
+*.pt
+*.ckpt
+*.onnx
+*.pb
+
+# Generated images / reports at repo root
+/alphabet_wise_accuracy.png
+/class_accuracy.png
+/confusion_matrix.png
+/inference_times.png
+/pca.png
+
+# Misc local files
 *.log
-db.sqlite3
-
-

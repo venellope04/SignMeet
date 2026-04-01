@@ -9,6 +9,7 @@ SECRET_KEY = 'Yl9ttWcun4XCemOEOCi5FeGCXNXPtu7Ct_3gqM3JIav_Xe7Us6ZsyH-oVlr46pHYWN
 
 # Application definition
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -61,21 +62,30 @@ WSGI_APPLICATION = 'SignMeet.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': str(BASE_DIR / 'db.sqlite3'),    
+        'NAME': str(BASE_DIR / 'db.sqlite3'),
     }
 }
 
 # Channels configuration
 ASGI_APPLICATION = 'SignMeet.asgi.application'
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [(os.environ.get('REDIS_HOST', 'localhost'), int(os.environ.get('REDIS_PORT', 6348)))],
+USE_REDIS_CHANNEL_LAYER = os.environ.get('USE_REDIS_CHANNEL_LAYER', '').lower() in {'1', 'true', 'yes'}
+
+if USE_REDIS_CHANNEL_LAYER:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [('127.0.0.1', 6348)],
+            },
         },
-    },
-}
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 
 
 
@@ -102,7 +112,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ] # Replace with your frontend's URL
+
+CORS_ALLOW_CREDENTIALS = True
 
 # settings.py
 

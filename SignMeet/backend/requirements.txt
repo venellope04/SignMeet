@@ -1,6 +1,11 @@
-Django==4.2
-channels
-djangorestframework
+Django==3.2
+daphne==3.0.2
+channels==3.0.3
+channels-redis==3.3.1
+djangorestframework==3.12.4
+django-cors-headers==3.13.0
+agora-token-builder==1.0.0
+mediapipe==0.10.14
 opencv-python==4.10.0.84
 redis==3.5.3
 torch 
