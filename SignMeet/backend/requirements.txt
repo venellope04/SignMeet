@@ -11,3 +11,10 @@ redis==3.5.3
 torch 
 torchvision 
 torchaudio
+agora_token_builder
+autobahn
+daphne
+channels
+channels-redis
+django-cors-headers==3.7.0
+cryptography==41.0.7

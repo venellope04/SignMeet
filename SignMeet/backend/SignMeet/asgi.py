@@ -14,3 +14,5 @@ application = ProtocolTypeRouter({
         URLRouter(conferencing.routing.websocket_urlpatterns)
     ),
 })
+
+
