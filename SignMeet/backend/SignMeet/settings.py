@@ -72,10 +72,11 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6348)],  # Update the port to 6380
+            "hosts": [(os.environ.get('REDIS_HOST', 'localhost'), int(os.environ.get('REDIS_PORT', 6348)))],
         },
     },
 }
+
 
 
  
@@ -111,4 +112,14 @@ AGORA_API_KEY = 'd8d112b189d749a0b283708e3eb53667'
 AGORA_API_SECRET = '8796d7f317ff421c8080ace9c1e432f2'
 app_certificate = 'c30096eedb10445fb0990cb0d0a4f15b' 
 
+
+# Optional: Django REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+    ]
+}
 

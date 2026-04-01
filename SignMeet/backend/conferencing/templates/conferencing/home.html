@@ -283,30 +283,46 @@
     };
 
     detectBtn.onclick = () => {
-        console.log("Detect button clicked");
-        if (!localTracks.videoTrack || !localTracks.videoTrack._videoElement) {
-            alert("No video track or feed available.");
-            return;
-        }
+    console.log("Detect button clicked");
+    if (!isDetecting) {
+        // Start detection and create WebSocket connection
         if (!ws || ws.readyState !== WebSocket.OPEN) {
-            alert("WebSocket connection not established. Try rejoining the call.");
-            return;
+            ws = new WebSocket('ws://' + window.location.host + '/ws/sign_detection/');
+            ws.onopen = () => {
+                console.log("WebSocket connected for sign detection");
+                isDetecting = true;
+                detectBtn.textContent = "Stop Detection";
+                subtitle.style.display = 'block';
+                detectSigns();
+            };
+            ws.onmessage = (event) => {
+                const translation = event.data;
+                subtitle.textContent = `Transcript: ${translation}`;
+                console.log("Received translation:", translation);
+            };
+            ws.onclose = () => {
+                console.log("WebSocket connection closed");
+                isDetecting = false;
+                detectBtn.textContent = "Detect Sign Language";
+            };
+            ws.onerror = (error) => console.error("WebSocket error:", error);
+        } else {
+            // Already connected, just start detection
+            isDetecting = true;
+            detectBtn.textContent = "Stop Detection";
+            subtitle.style.display = 'block';
+            detectSigns();
         }
-
-        if (isDetecting) {
-            isDetecting = false;
-            detectBtn.textContent = "Detect Sign Language";
-            subtitle.style.display = 'none';
-            subtitle.textContent = "Transcript";
-            console.log("Stopped sign language detection");
-            return;
-        }
-
-        isDetecting = true;
-        detectBtn.textContent = "Stop Detection";
-        subtitle.style.display = 'block';
-        detectSigns();
-    };
+    } else {
+        // Stop detection and close WebSocket
+        isDetecting = false;
+        detectBtn.textContent = "Detect Sign Language";
+        subtitle.style.display = 'none';
+        subtitle.textContent = "Transcript";
+        console.log("Stopped sign language detection");
+        if (ws) ws.close();
+    }
+};
 
     function detectSigns() {
         const videoElement = localTracks.videoTrack._videoElement;
