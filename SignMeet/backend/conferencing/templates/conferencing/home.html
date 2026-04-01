@@ -1,411 +1,314 @@
-
 {% extends 'conferencing/base.html' %}
 {% load static %}
 
 {% block content %}
 <link rel="stylesheet" type="text/css" href="{% static 'conferencing/css/home.css' %}">
-<h2 id="title">Join a Video Call</h2>
-<div id="joinSection">
-    <form id="roomForm" method="GET">
-        <div>
-            <label for="userName">Enter Name:</label>
-            <input type="text" id="userName" name="userName" placeholder="Your Name" required>
+
+<section class="app-shell">
+    <nav class="site-nav modern-surface">
+        <a href="/" class="nav-brand">
+            <span class="nav-brand-badge">S</span>
+            <span class="nav-brand-copy">
+                <strong>SignMeet</strong>
+                <small>Realtime sign translation</small>
+            </span>
+        </a>
+
+        <div class="nav-links">
+            <a href="#title" class="is-active"><span>Home</span></a>
+            {% if user.is_authenticated %}
+            <a href="#subtitle"><span>Translate</span></a>
+            {% else %}
+            <a href="#authEntry"><span>Translate</span></a>
+            {% endif %}
+            {% if user.is_authenticated %}
+            <form method="post" action="{% url 'logout' %}" class="nav-inline-form nav-action-group">
+                {% csrf_token %}
+                <button type="submit" class="ghost-button nav-button">Logout</button>
+            </form>
+            {% else %}
+            <div class="nav-action-group">
+                <button type="button" class="nav-button ghost-button" data-auth-modal="login">Login</button>
+            </div>
+            {% endif %}
         </div>
-        <div>
-            <label for="roomName">Enter Room Name:</label>
-            <input type="text" id="roomName" name="roomName" placeholder="Room Name" required>
+    </nav>
+
+    <section class="hero-panel">
+        <div class="hero-copy">
+            <p class="eyebrow">Human-first conferencing</p>
+            <h2 id="title">A sharper space for sign-aware conversations.</h2>
+            <p class="hero-text">
+                SignMeet blends live video, transcript assistance, and gesture-aware workflows into one focused call
+                experience that feels more like a product and less like a project demo.
+            </p>
+            <div class="hero-pills">
+                <span>Live meeting rooms</span>
+                <span>Realtime transcript layer</span>
+                <span>Sign detection workflow</span>
+            </div>
+            <div class="hero-metrics">
+                <article class="interactive-card">
+                    <strong>01</strong>
+                    <span>Account-first onboarding for repeat access</span>
+                    <div class="metric-hover">Profiles stay ready for your next meeting.</div>
+                </article>
+                <article class="interactive-card">
+                    <strong>02</strong>
+                    <span>Clean meeting control surface after login</span>
+                    <div class="metric-hover">Controls appear only when the room is live.</div>
+                </article>
+                <article class="interactive-card">
+                    <strong>03</strong>
+                    <span>Responsive layout for desktop and mobile</span>
+                    <div class="metric-hover">The layout stacks and stretches gracefully.</div>
+                </article>
+            </div>
         </div>
-        <button type="submit">Join</button>
-    </form>
-</div>
-<div id="roomSection" style="display: none;">
-    <div id="video_container"></div>
-    <div id="controls">
-        <button id="leaveBtn">Leave</button>
-        <button id="camBtn" disabled>Camera Off</button>
-        <button id="micBtn" disabled>Mic Off</button>
-        <button id="detectBtn" disabled>Detect Sign Language</button>
+
+        <aside class="preview-card">
+            <div class="floating-note note-top">Hover-ready cards</div>
+            <div class="floating-note note-bottom">Live transcript surface</div>
+            <div class="preview-orb preview-orb-one"></div>
+            <div class="preview-orb preview-orb-two"></div>
+            <div class="preview-window">
+                <div class="preview-bar">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div class="preview-grid">
+                    <article class="preview-video primary">
+                        <div class="preview-badge">You</div>
+                        <div class="preview-wave"></div>
+                    </article>
+                    <article class="preview-stack">
+                        <div class="preview-video secondary"></div>
+                        <div class="preview-transcript">
+                            <p>Transcript</p>
+                            <strong>"Let's join the design review in room alpha."</strong>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </aside>
+    </section>
+
+    {% if user.is_authenticated %}
+    <section class="workspace-card modern-surface">
+        <div class="workspace-header">
+            <div>
+                <p class="section-kicker">Workspace unlocked</p>
+                <h3>Welcome back, {{ user.username }}</h3>
+                <p class="section-copy">Create a room, switch on devices when you're ready, and step straight into the call.</p>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="ghost-button">Log Out</button>
+            </form>
+        </div>
+
+        <div class="workspace-stats">
+            <article class="stat-card interactive-card">
+                <span class="stat-label">Entry flow</span>
+                <strong>Login, then room</strong>
+                <p>No noisy setup before the workspace appears.</p>
+            </article>
+            <article class="stat-card interactive-card">
+                <span class="stat-label">Device control</span>
+                <strong>Enable on demand</strong>
+                <p>Camera and mic can be switched on only when needed.</p>
+            </article>
+            <article class="stat-card interactive-card">
+                <span class="stat-label">Detection mode</span>
+                <strong>Start when useful</strong>
+                <p>Transcript and sign detection stay out of the way until you want them.</p>
+            </article>
+        </div>
+
+        <div class="workspace-grid">
+            <div id="joinSection" class="join-card modern-surface">
+                <form id="roomForm" method="GET">
+                    <input type="hidden" id="userName" name="userName" value="{{ user.username }}">
+                    <div class="field-group">
+                        <label for="roomName">Room Name</label>
+                        <input type="text" id="roomName" name="roomName" placeholder="team-sync" required>
+                    </div>
+                    <button type="submit" class="primary-button">Enter Room</button>
+                </form>
+                <div class="join-hint-list">
+                    <span>Camera can be enabled later</span>
+                    <span>Mic joins separately if needed</span>
+                    <span>Detection starts on demand</span>
+                </div>
+                <div class="join-popup-card">
+                    <p>Quick tip</p>
+                    <strong>Use a short room slug like `alpha-sync` so people can join fast.</strong>
+                </div>
+            </div>
+
+            <aside class="workspace-side modern-surface">
+                <p class="section-kicker">Session rhythm</p>
+                <h4>From login to live call in one flow.</h4>
+                <ul class="workspace-steps">
+                    <li>Choose a room name for your meeting.</li>
+                    <li>Join first, then enable devices when available.</li>
+                    <li>Use transcript and sign detection only when needed.</li>
+                </ul>
+            </aside>
+        </div>
+
+        <div id="roomSection" class="room-stage" style="display: none;">
+            <div class="status-banner modern-surface">
+                <span class="status-dot"></span>
+                <div>
+                    <strong>Meeting active</strong>
+                    <p>Your controls and transcript tools are active below.</p>
+                </div>
+            </div>
+
+            <div id="video_container"></div>
+
+            <div id="controls">
+                <button id="leaveBtn" class="danger-button">Leave</button>
+                <button id="camBtn" disabled>Camera Off</button>
+                <button id="micBtn" disabled>Mic Off</button>
+                <button id="detectBtn" disabled>Detect Sign Language</button>
+            </div>
+            <div id="subtitle">Transcript</div>
+        </div>
+    </section>
+
+    <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.19.0.js?nocache=202503162"></script>
+    <script src="https://docs.opencv.org/4.x/opencv.js" async></script>
+    <script src="{% static 'conferencing/js/home.js' %}"></script>
+    {% else %}
+    <section class="auth-entry modern-surface" id="authEntry">
+        <p class="section-kicker">Account access</p>
+        <h3>Use the navbar to log in or create your account.</h3>
+        <p class="section-copy">The authentication flow now opens as popup cards directly from the top navigation.</p>
+        <div class="hero-pills">
+            <span>Navbar login flow</span>
+            <span>Popup sign up card</span>
+            <span>Same page experience</span>
+        </div>
+    </section>
+
+    <div class="auth-modal-layer {% if signup_error or login_error %}is-visible{% endif %}" id="authModalLayer">
+        <div class="auth-backdrop" data-auth-close></div>
+
+        <article
+            class="auth-modal modern-surface {% if active_panel == 'signup' or signup_error %}is-visible{% endif %}"
+            id="signupModal"
+            aria-hidden="{% if active_panel == 'signup' or signup_error %}false{% else %}true{% endif %}"
+        >
+            <button type="button" class="auth-modal-close" data-auth-close>x</button>
+            <div class="auth-card-head">
+                <p class="section-kicker">First visit</p>
+                <span class="auth-chip">New account</span>
+            </div>
+            <h3>Create your account</h3>
+            <p class="section-copy">Sign up once, keep your identity, and come back without re-entering setup details every time.</p>
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="signup">
+                <div class="field-group">
+                    <label for="signup_username">Username</label>
+                    <input type="text" id="signup_username" name="signup_username" value="{{ signup_username }}" required>
+                </div>
+                <div class="field-group">
+                    <label for="signup_password">Password</label>
+                    <input type="password" id="signup_password" name="signup_password" required>
+                </div>
+                <div class="field-group">
+                    <label for="signup_confirm_password">Confirm Password</label>
+                    <input type="password" id="signup_confirm_password" name="signup_confirm_password" required>
+                </div>
+                {% if signup_error %}
+                <p class="form-error">{{ signup_error }}</p>
+                {% endif %}
+                <button type="submit" class="primary-button">Sign Up</button>
+            </form>
+            <button type="button" class="auth-switch" data-auth-modal="login">Already have an account? Log In</button>
+        </article>
+
+        <article
+            class="auth-modal modern-surface {% if active_panel == 'login' or login_error %}is-visible{% endif %}"
+            id="loginModal"
+            aria-hidden="{% if active_panel == 'login' or login_error %}false{% else %}true{% endif %}"
+        >
+            <button type="button" class="auth-modal-close" data-auth-close>x</button>
+            <div class="auth-card-head">
+                <p class="section-kicker">Returning user</p>
+                <span class="auth-chip">Fast access</span>
+            </div>
+            <h3>Log in to join</h3>
+            <p class="section-copy">Use your existing SignMeet account to unlock the meeting workspace and jump straight into a room.</p>
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="login">
+                <div class="field-group">
+                    <label for="login_username">Username</label>
+                    <input type="text" id="login_username" name="login_username" value="{{ login_username }}" required>
+                </div>
+                <div class="field-group">
+                    <label for="login_password">Password</label>
+                    <input type="password" id="login_password" name="login_password" required>
+                </div>
+                {% if login_error %}
+                <p class="form-error">{{ login_error }}</p>
+                {% endif %}
+                <button type="submit" class="primary-button">Log In</button>
+            </form>
+            <button type="button" class="auth-switch" data-auth-modal="signup">Need an account? Sign Up</button>
+        </article>
     </div>
-    <div id="subtitle">Transcript</div>
-</div>
 
-<script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.19.0.js?nocache=202503162"></script>
-<script src="https://docs.opencv.org/4.x/opencv.js" async></script>
+    <script>
+        (() => {
+            const layer = document.getElementById('authModalLayer');
+            if (!layer) return;
 
-<script>
-    let client = null;
-    let localTracks = { videoTrack: null, audioTrack: null };
-    let localVideoElement = null;
-    let remoteUsers = {};
-    let ws = null;
-    let isDetecting = false;
-    let uid = null;
-    let isCameraOn = false;
-    let isMicOn = false;
+            const signupModal = document.getElementById('signupModal');
+            const loginModal = document.getElementById('loginModal');
+            const navLinks = document.querySelectorAll('.nav-links a');
 
-    const title = document.getElementById('title');
-    const joinSection = document.getElementById('joinSection');
-    const roomSection = document.getElementById('roomSection');
-    const videoContainer = document.getElementById('video_container');
-    const subtitle = document.getElementById('subtitle');
-    const leaveBtn = document.getElementById('leaveBtn');
-    const camBtn = document.getElementById('camBtn');
-    const micBtn = document.getElementById('micBtn');
-    const detectBtn = document.getElementById('detectBtn');
-    const form = document.getElementById('roomForm');
+            const openModal = (type) => {
+                layer.classList.add('is-visible');
+                signupModal.classList.toggle('is-visible', type === 'signup');
+                loginModal.classList.toggle('is-visible', type === 'login');
+                signupModal.setAttribute('aria-hidden', String(type !== 'signup'));
+                loginModal.setAttribute('aria-hidden', String(type !== 'login'));
+            };
 
-    console.log("title:", !!title);
-    console.log("joinSection:", !!joinSection);
-    console.log("roomSection:", !!roomSection);
-    console.log("videoContainer:", !!videoContainer);
-    console.log("subtitle:", !!subtitle);
-    console.log("leaveBtn:", !!leaveBtn);
-    console.log("camBtn:", !!camBtn);
-    console.log("micBtn:", !!micBtn);
-    console.log("detectBtn:", !!detectBtn);
-    console.log("form:", !!form);
+            const closeModal = () => {
+                layer.classList.remove('is-visible');
+                signupModal.classList.remove('is-visible');
+                loginModal.classList.remove('is-visible');
+                signupModal.setAttribute('aria-hidden', 'true');
+                loginModal.setAttribute('aria-hidden', 'true');
+            };
 
-    subtitle.style.display = 'none';
+            document.querySelectorAll('[data-auth-modal]').forEach((button) => {
+                button.addEventListener('click', () => openModal(button.dataset.authModal));
+            });
 
-    async function fetchToken(roomName) {
-        const response = await fetch(`/get_token/?channelName=${encodeURIComponent(roomName)}`);
-        const data = await response.json();
-        if (data.error) throw new Error(data.error);
-        return data;
-    }
+            document.querySelectorAll('[data-auth-close]').forEach((element) => {
+                element.addEventListener('click', closeModal);
+            });
 
-    form.onsubmit = async function(event) {
-        event.preventDefault();
-        const userName = document.getElementById('userName').value.trim();
-        const roomName = document.getElementById('roomName').value.trim();
-        if (userName && roomName) {
-            window.currentUserName = userName;
-            sessionStorage.setItem('signMeetSession', JSON.stringify({ uid: null, roomName, userName }));
-            const appId = "71fbfbff2263a49869725faa8404523ec";
-            try {
-                const { token, uid: newUid } = await fetchToken(roomName);
-                uid = newUid;
-                sessionStorage.setItem('signMeetSession', JSON.stringify({ uid, roomName, userName }));
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeModal();
+            });
 
-                client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-                console.log("Client created with ID:", uid);
-
-                client.on('user-published', handleUserPublished);
-                client.on('user-unpublished', handleUserUnpublished);
-
-                await client.join(appId, roomName, token, uid);
-                console.log("Joined channel with UID:", uid);
-
-                localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack({
-                    encoderConfig: { width: 229, height: 229, frameRate: 15, bitrateMin: 300, bitrateMax: 500 }
+            navLinks.forEach((link) => {
+                link.addEventListener('click', () => {
+                    navLinks.forEach((item) => item.classList.remove('is-active'));
+                    link.classList.add('is-active');
                 });
-                localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-                console.log("Tracks created:", localTracks);
-
-                const localVideoContainer = document.createElement("div");
-                localVideoContainer.className = "user-video-container";
-                localVideoContainer.id = `user-container-${uid}`;
-                localVideoElement = document.createElement("video");
-                localVideoElement.id = `user-video-${uid}`;
-                localVideoElement.className = "video-element";
-                localVideoElement.muted = true;
-                localVideoElement.autoplay = true;
-                const nameLabel = document.createElement("div");
-                nameLabel.className = "user-name-label";
-                nameLabel.textContent = userName;
-                localVideoContainer.appendChild(localVideoElement);
-                localVideoContainer.appendChild(nameLabel);
-                videoContainer.appendChild(localVideoContainer);
-                
-                const stream = new MediaStream();
-                stream.addTrack(localTracks.videoTrack.getMediaStreamTrack());
-                localVideoElement.srcObject = stream;
-                await localVideoElement.play().catch(err => {
-                    console.error("Video play failed:", err);
-                    alert("Failed to play video: " + err.message);
-                });
-                localTracks.videoTrack._videoElement = localVideoElement;
-                await client.publish([localTracks.videoTrack, localTracks.audioTrack]);
-                console.log("Tracks published");
-
-                isCameraOn = true;
-                isMicOn = true;
-                camBtn.textContent = "Camera Off";
-                micBtn.textContent = "Mic Off";
-                camBtn.disabled = false;
-                micBtn.disabled = false;
-                detectBtn.disabled = false;
-
-                title.style.display = 'none';
-                joinSection.style.display = 'none';
-                roomSection.style.display = 'block';
-            } catch (err) {
-                console.error("Failed to join room:", err);
-                alert("Failed to join room: " + err.message);
-                if (client) await client.leave();
-            }
-        } else {
-            alert('Please enter both name and room name!');
-        }
-    };
-
-    leaveBtn.onclick = async () => {
-        console.log("Leave button clicked");
-        for (let trackName in localTracks) {
-            if (localTracks[trackName]) {
-                await client.unpublish(localTracks[trackName]);
-                localTracks[trackName].stop();
-                localTracks[trackName].close();
-                console.log(`${trackName} stopped and closed`);
-            }
-        }
-        localTracks = { videoTrack: null, audioTrack: null };
-        if (localVideoElement) {
-            localVideoElement.remove();
-            localVideoElement = null;
-        }
-        if (ws) ws.close();
-        if (client) await client.leave();
-        videoContainer.innerHTML = '';
-        title.style.display = 'block';
-        joinSection.style.display = 'block';
-        roomSection.style.display = 'none';
-        subtitle.style.display = 'none';
-        leaveBtn.disabled = true;
-        camBtn.disabled = true;
-        micBtn.disabled = true;
-        detectBtn.disabled = true;
-        camBtn.textContent = "Camera On";
-        micBtn.textContent = "Mic On";
-        detectBtn.textContent = "Detect Sign Language";
-        subtitle.textContent = "Transcript";
-        isDetecting = false;
-        window.currentUserName = null;
-        sessionStorage.removeItem('signMeetSession');
-        console.log("Left channel");
-    };
-
-    camBtn.onclick = async () => {
-        console.log("Camera button clicked");
-        if (!isCameraOn) {
-            try {
-                localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack({
-                    encoderConfig: { width: 229, height: 229, frameRate: 15, bitrateMin: 300, bitrateMax: 500 }
-                });
-                console.log("Video track created:", localTracks.videoTrack);
-                if (localTracks.videoTrack.getMediaStreamTrack().readyState !== "live") {
-                    console.warn("Video track is not live.");
-                    alert("Video track is not live.");
-                    localTracks.videoTrack = null;
-                    return;
-                }
-                const localVideoContainer = document.createElement("div");
-                localVideoContainer.className = "user-video-container";
-                localVideoContainer.id = `user-container-${uid}`;
-                localVideoElement = document.createElement("video");
-                localVideoElement.id = `user-video-${uid}`;
-                localVideoElement.className = "video-element";
-                localVideoElement.muted = true;
-                localVideoElement.autoplay = true;
-                const nameLabel = document.createElement("div");
-                nameLabel.className = "user-name-label";
-                nameLabel.textContent = window.currentUserName || "Me";
-                localVideoContainer.appendChild(localVideoElement);
-                localVideoContainer.appendChild(nameLabel);
-                videoContainer.appendChild(localVideoContainer);
-                const stream = new MediaStream();
-                stream.addTrack(localTracks.videoTrack.getMediaStreamTrack());
-                localVideoElement.srcObject = stream;
-                await localVideoElement.play();
-                localTracks.videoTrack._videoElement = localVideoElement;
-                await client.publish(localTracks.videoTrack);
-                console.log("Video track published");
-                isCameraOn = true;
-                camBtn.textContent = "Camera Off";
-                detectBtn.disabled = false;
-            } catch (err) {
-                console.error("Failed to enable camera:", err);
-                alert("Camera access failed: " + err.message);
-            }
-        } else {
-            if (localTracks.videoTrack) {
-                await client.unpublish(localTracks.videoTrack);
-                localTracks.videoTrack.stop();
-                localTracks.videoTrack.close();
-                localTracks.videoTrack = null;
-                if (localVideoElement) {
-                    localVideoElement.remove();
-                    localVideoElement = null;
-                }
-                console.log("Camera turned off");
-                isCameraOn = false;
-                camBtn.textContent = "Camera On";
-                detectBtn.disabled = true;
-                isDetecting = false;
-                detectBtn.textContent = "Detect Sign Language";
-                subtitle.style.display = 'none';
-                subtitle.textContent = "Transcript";
-            }
-        }
-    };
-
-    micBtn.onclick = async () => {
-        console.log("Mic button clicked");
-        if (!isMicOn) {
-            try {
-                localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-                console.log("Audio track created:", localTracks.audioTrack);
-                if (localTracks.audioTrack.getMediaStreamTrack().readyState !== "live") {
-                    console.warn("Audio track is not live.");
-                    alert("Audio track is not live.");
-                    localTracks.audioTrack = null;
-                    return;
-                }
-                await client.publish(localTracks.audioTrack);
-                console.log("Audio track published");
-                isMicOn = true;
-                micBtn.textContent = "Mic Off";
-            } catch (err) {
-                console.error("Failed to enable microphone:", err);
-                alert("Microphone access failed: " + err.message);
-            }
-        } else {
-            if (localTracks.audioTrack) {
-                await client.unpublish(localTracks.audioTrack);
-                localTracks.audioTrack.stop();
-                localTracks.audioTrack.close();
-                localTracks.audioTrack = null;
-                console.log("Microphone turned off");
-                isMicOn = false;
-                micBtn.textContent = "Mic On";
-            }
-        }
-    };
-
-    detectBtn.onclick = () => {
-        console.log("Detect button clicked");
-        if (!localTracks.videoTrack || !localTracks.videoTrack._videoElement) {
-            alert("No video track or feed available.");
-            return;
-        }
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            alert("WebSocket connection not established. Try rejoining the call.");
-            return;
-        }
-
-        if (isDetecting) {
-            isDetecting = false;
-            detectBtn.textContent = "Detect Sign Language";
-            subtitle.style.display = 'none';
-            subtitle.textContent = "Transcript";
-            console.log("Stopped sign language detection");
-            return;
-        }
-
-        isDetecting = true;
-        detectBtn.textContent = "Stop Detection";
-        subtitle.style.display = 'block';
-        detectSigns();
-    };
-
-    function detectSigns() {
-        const videoElement = localTracks.videoTrack._videoElement;
-
-        function captureAndSendFrame() {
-            if (!isDetecting) return;
-
-            if (videoElement.readyState < 2 || !cv) {
-                console.warn("Video not ready or OpenCV not loaded, readyState:", videoElement.readyState);
-                setTimeout(captureAndSendFrame, 500);
-                return;
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = 229;
-            canvas.height = 229;
-            const context = canvas.getContext('2d');
-            context.drawImage(videoElement, 0, 0, 229, 229);
-
-            let imageData = context.getImageData(0, 0, 229, 229);
-            let data = imageData.data;
-
-            let rgbData = new Uint8Array(229 * 229 * 3);
-            for (let i = 0, j = 0; i < data.length && j < rgbData.length; i += 4, j += 3) {
-                rgbData[j] = data[i];
-                rgbData[j + 1] = data[i + 1];
-                rgbData[j + 2] = data[i + 2];
-            }
-
-            console.log(`Sending frame, byte length: ${rgbData.length}`);
-            ws.send(rgbData);
-            setTimeout(captureAndSendFrame, 500);
-        }
-
-        function onOpenCvReady() {
-            cv = window.cv;
-            console.log("OpenCV loaded");
-            captureAndSendFrame();
-        }
-        if (typeof cv === 'undefined') {
-            window.addEventListener('opencv.js', onOpenCvReady);
-        } else {
-            onOpenCvReady();
-        }
-    }
-
-    async function handleUserPublished(user, mediaType) {
-        console.log("User published:", user.uid, mediaType);
-        await client.subscribe(user, mediaType);
-        if (mediaType === 'video') {
-            let playerContainer = document.getElementById(`remote-container-${user.uid}`);
-            if (!playerContainer) {
-                playerContainer = document.createElement("div");
-                playerContainer.className = "user-video-container";
-                playerContainer.id = `remote-container-${user.uid}`;
-                const player = document.createElement("div");
-                player.id = `remote-user-${user.uid}`;
-                player.className = "video-element";
-                const nameLabel = document.createElement("div");
-                nameLabel.className = "user-name-label";
-                nameLabel.textContent = "Remote User";
-                try {
-                    const userData = user.metaData ? JSON.parse(user.metaData) : null;
-                    if (userData && userData.userName) {
-                        nameLabel.textContent = userData.userName;
-                    }
-                } catch (err) {
-                    console.warn("Could not parse user metadata:", err);
-                }
-                playerContainer.appendChild(player);
-                playerContainer.appendChild(nameLabel);
-                videoContainer.appendChild(playerContainer);
-                user.videoTrack.play(player);
-            } else {
-                const player = document.getElementById(`remote-user-${user.uid}`);
-                if (player) user.videoTrack.play(player);
-            }
-        }
-        if (mediaType === 'audio') user.audioTrack.play();
-    }
-
-    function handleUserUnpublished(user) {
-        console.log("User unpublished:", user.uid);
-        const container = document.getElementById(`remote-container-${user.uid}`);
-        if (container) container.remove();
-    }
-
-    ws = new WebSocket('ws://' + window.location.host + '/ws/sign_detection/');
-    ws.onopen = () => console.log("WebSocket connected for sign detection");
-    ws.onmessage = (event) => {
-        const translation = event.data;
-        subtitle.textContent = `Transcript: ${translation}`;
-        console.log("Received translation:", translation);
-    };
-    ws.onclose = () => console.log("WebSocket connection closed");
-    ws.onerror = (error) => console.error("WebSocket error:", error);
-
-
-
-</script>
-<script src="{% static 'conferencing/js/home.js' %}"></script>
+            });
+        })();
+    </script>
+    {% endif %}
+</section>
 {% endblock %}

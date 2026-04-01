@@ -1,28 +1,80 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
+* {
+    box-sizing: border-box;
 }
 
-header {
-    background-color: #3366cc;
-    color: white;
-    padding: 1em;
-    text-align: center;
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-family: "Manrope", "Segoe UI", sans-serif;
+    color: #edf4ff;
+    background:
+        radial-gradient(circle at 12% 14%, rgba(34, 211, 238, 0.14), transparent 24%),
+        radial-gradient(circle at 86% 10%, rgba(129, 140, 248, 0.18), transparent 28%),
+        radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.12), transparent 28%),
+        linear-gradient(180deg, #06111f 0%, #081525 45%, #0b1727 100%);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+.site-header {
+    padding: 24px 36px 0;
+}
+
+.brand-lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #10253f 0%, #2b7a78 100%);
+    color: #f7fafc;
+    font-family: "Sora", sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    box-shadow: 0 16px 36px rgba(16, 37, 63, 0.18);
+}
+
+.site-header h1 {
+    margin: 0;
+    font-family: "Sora", sans-serif;
+    font-size: 1.08rem;
+    letter-spacing: -0.03em;
+}
+
+.site-header p {
+    margin: 3px 0 0;
+    color: #65748b;
+    font-size: 0.9rem;
 }
 
 main {
-    padding: 1em;
+    padding: 24px 36px 40px;
 }
 
-h2 {
-    color: #3366cc;
-}
-
-form {
-    margin-bottom: 2em;
-}
-
-label {
-    margin-right: 0.5em;
+@media (max-width: 720px) {
+    main {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
 }

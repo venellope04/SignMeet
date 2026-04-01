@@ -1,20 +1,13 @@
-```html
 {% extends 'conferencing/base.html' %}
 {% load static %}
 
 {% block content %}
-<link rel="stylesheet" type="text/css" href="{% static 'conferencing/css/styles.css' %}">
-<div id="video_container"></div>
-<div id="controls">
-    <button id="leaveBtn">Leave</button>
-    <button id="camBtn" disabled>Turn On Camera</button>
-    <button id="micBtn" disabled>Turn On Mic</button>
-    <button id="detectBtn" disabled>Detect Sign Language</button>
-</div>
-<div id="subtitle">Translation: [None]</div>
+<link rel="stylesheet" type="text/css" href="{% static 'conferencing/css/room.css' %}">
 
-<script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.19.0.js?nocache=202503162"></script>
-<script src="https://docs.opencv.org/4.x/opencv.js" async></script>
-<script src="{% static 'conferencing/js/script.js' %}"></script>
+<section class="room-page">
+    <h2>Room: {{ room_name }}</h2>
+    <p>UID: {{ uid|default:"Pending" }}</p>
+    <p>This route is available, but the main call experience is launched from the home page.</p>
+    <a href="/">Return to home</a>
+</section>
 {% endblock %}
-```
