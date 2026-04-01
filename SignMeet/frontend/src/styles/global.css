@@ -589,6 +589,41 @@ input {
   background: linear-gradient(135deg, rgba(90, 25, 35, 0.9), rgba(160, 41, 62, 0.82));
 }
 
+.remote-video-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.remote-video-box {
+  position: relative;
+  width: 180px;
+  height: 130px;
+  border: 1px solid rgba(153, 174, 209, 0.2);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(4, 9, 20, 0.75);
+}
+
+.remote-video-box .camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remote-video-box .user-name-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 4px 6px;
+  color: #ffffff;
+  font-size: 0.72rem;
+  background: rgba(0, 0, 0, 0.55);
+  text-align: center;
+}
+
 .hero-grid,
 .translate-grid,
 .login-grid,

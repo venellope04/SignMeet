@@ -36,6 +36,9 @@ function SessionPage() {
   const [remoteTranslatedText, setRemoteTranslatedText] = useState(remoteIdleMessage);
   const [remoteParticipantName, setRemoteParticipantName] = useState('Other participant');
   const [permissionError, setPermissionError] = useState('');
+  const [remoteParticipantIds, setRemoteParticipantIds] = useState([]);
+  const agoraClientRef = useRef(null);
+  const localTracksRef = useRef({ audioTrack: null, videoTrack: null });
 
   const navigateToThankYou = (reason = 'left') => {
     navigate('/thank-you', {
@@ -46,6 +49,87 @@ function SessionPage() {
         meetingId,
       }
     });
+  };
+
+  const fetchAgoraToken = async (roomName) => {
+    const response = await fetch(`/get_token/?channelName=${encodeURIComponent(roomName)}`, {
+      credentials: 'include'
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Agora token request failed');
+    return data;
+  };
+
+  const handleRemoteUserPublished = async (user, mediaType) => {
+    const client = agoraClientRef.current;
+    if (!client) return;
+    await client.subscribe(user, mediaType);
+
+    if (mediaType === 'video') {
+      setRemoteParticipantIds((prev) => {
+        if (prev.includes(user.uid)) return prev;
+        return [...prev, user.uid];
+      });
+      const player = document.getElementById(`remote-video-${user.uid}`);
+      if (player && user.videoTrack) {
+        user.videoTrack.play(player);
+      }
+    }
+
+    if (mediaType === 'audio') {
+      user.audioTrack?.play();
+    }
+  };
+
+  const handleRemoteUserUnpublished = (user) => {
+    setRemoteParticipantIds((prev) => prev.filter((id) => id !== user.uid));
+    const container = document.getElementById(`remote-video-container-${user.uid}`);
+    if (container) container.remove();
+  };
+
+  const cleanupAgora = async () => {
+    if (localTracksRef.current.videoTrack) {
+      localTracksRef.current.videoTrack.stop();
+      localTracksRef.current.videoTrack.close();
+    }
+    if (localTracksRef.current.audioTrack) {
+      localTracksRef.current.audioTrack.stop();
+      localTracksRef.current.audioTrack.close();
+    }
+    if (agoraClientRef.current) {
+      await agoraClientRef.current.leave();
+      agoraClientRef.current = null;
+    }
+    setRemoteParticipantIds([]);
+  };
+
+  const startAgoraCall = async () => {
+    if (!roomName) return;
+    try {
+      const appId = '71fbf1e2263a49869725faa8404523ec';
+      const { token, uid } = await fetchAgoraToken(roomName);
+
+      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      client.on('user-published', handleRemoteUserPublished);
+      client.on('user-unpublished', handleRemoteUserUnpublished);
+
+      await client.join(appId, roomName, token, uid);
+      agoraClientRef.current = client;
+
+      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+      localTracksRef.current = { audioTrack, videoTrack };
+
+      if (videoRef.current) {
+        videoTrack.play(videoRef.current);
+        setHasVideoPreview(true);
+      }
+
+      await client.publish([audioTrack, videoTrack]);
+      setRoomStatus(`Joined Agora room ${roomName} as ${displayName}`);
+    } catch (err) {
+      console.error('Agora join failed:', err);
+      setPermissionError('Unable to connect to Agora video room. Please verify camera permissions and retry.');
+    }
   };
 
   const speakTranslation = (translation, participantLabel, origin) => {
@@ -214,6 +298,18 @@ function SessionPage() {
     });
   }, [meetingId, isCameraOn]);
 
+  useEffect(() => {
+    if (!session.authenticated || !meetingId) {
+      return;
+    }
+
+    startAgoraCall();
+
+    return () => {
+      cleanupAgora();
+    };
+  }, [meetingId, roomName, session.authenticated]);
+
   const stopLocalPreview = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -360,9 +456,10 @@ function SessionPage() {
     }
   };
 
-  const leaveRoom = () => {
+  const leaveRoom = async () => {
     stopDetection();
     stopLocalPreview();
+    await cleanupAgora();
     navigateToThankYou('left');
   };
 
@@ -456,6 +553,18 @@ function SessionPage() {
             <div className="room-participant-tag">
               <span>{displayName}</span>
               <small>{isMicOn ? 'Mic on' : 'Mic muted'}</small>
+            </div>
+
+            <div className="remote-video-grid">
+              {remoteParticipantIds.length === 0 && (
+                <div className="remote-empty">Waiting for other users to join...</div>
+              )}
+              {remoteParticipantIds.map((uid) => (
+                <div key={uid} id={`remote-video-container-${uid}`} className="remote-video-box">
+                  <div id={`remote-video-${uid}`} className="camera-video" />
+                  <div className="user-name-label">Participant {uid}</div>
+                </div>
+              ))}
             </div>
           </div>
 

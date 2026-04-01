@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
@@ -8,15 +8,15 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://backend:8000',
         changeOrigin: true
       },
       '/get_token': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://backend:8000',
         changeOrigin: true
       },
       '/ws': {
-        target: 'ws://127.0.0.1:8000',
+        target: 'ws://backend:8000',
         ws: true,
         changeOrigin: true
       }
