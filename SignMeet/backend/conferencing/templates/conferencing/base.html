@@ -1,19 +1,19 @@
-```html
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SignMeet - {% block title %}{% endblock %}</title>
     {% load static %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{% static 'conferencing/css/styles.css' %}">
 </head>
 <body>
-    <header>
-        <h1>SignMeet</h1>
-    </header>
     <main>
         {% block content %}{% endblock %}
     </main>
 </body>
 </html>
-```
