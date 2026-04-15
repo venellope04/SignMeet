@@ -8,6 +8,4 @@ agora-token-builder==1.0.0
 mediapipe==0.10.14
 opencv-python==4.10.0.84
 redis==3.5.3
-torch 
-torchvision 
-torchaudio
+cryptography==41.0.7

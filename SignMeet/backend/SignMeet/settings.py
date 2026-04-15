@@ -25,13 +25,13 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'SignMeet.urls'
@@ -76,7 +76,7 @@ if USE_REDIS_CHANNEL_LAYER:
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [('127.0.0.1', 6348)],
+                "hosts": [(os.environ.get('REDIS_HOST', '127.0.0.1'), int(os.environ.get('REDIS_PORT', 6379)))],
             },
         },
     }
@@ -86,6 +86,7 @@ else:
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
         },
     }
+
 
 
  
@@ -116,6 +117,7 @@ CORS_ALLOWED_ORIGINS = [
 ] # Replace with your frontend's URL
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 # settings.py
 
@@ -125,4 +127,14 @@ AGORA_API_KEY = 'd8d112b189d749a0b283708e3eb53667'
 AGORA_API_SECRET = '8796d7f317ff421c8080ace9c1e432f2'
 app_certificate = 'c30096eedb10445fb0990cb0d0a4f15b' 
 
+
+# Optional: Django REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+    ]
+}
 

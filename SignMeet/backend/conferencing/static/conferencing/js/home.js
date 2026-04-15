@@ -389,9 +389,12 @@ let client = null;
 
     async function handleUserPublished(user, mediaType) {
         console.log("User published:", user.uid, mediaType);
-        await client.subscribe(user, mediaType);
-        
-        if (mediaType === 'video') {
+        if (String(user.uid) === String(uid)) {
+            console.log('Ignoring own published stream for uid', user.uid);
+            return;
+        }
+
+    if (mediaType === 'video') {
             // Check if container already exists for this user
             let playerContainer = document.getElementById(`remote-container-${user.uid}`);
             
@@ -446,6 +449,9 @@ let client = null;
 
     function handleUserUnpublished(user) {
         console.log("User unpublished:", user.uid);
+        if (String(user.uid) === String(uid)) {
+            return;
+        }
         const container = document.getElementById(`remote-container-${user.uid}`);
         if (container) container.remove();
     }

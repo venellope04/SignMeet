@@ -146,18 +146,21 @@ def _extract_meeting_id_or_name(raw_value):
 
 @require_GET
 def session_view(request):
-    if request.user.is_authenticated:
-        return JsonResponse({
-            'authenticated': True,
-            'username': request.user.username,
-            'email': request.user.email,
-        })
+    try:
+        if request.user.is_authenticated:
+            return JsonResponse({
+                'authenticated': True,
+                'username': request.user.username,
+                'email': request.user.email,
+            })
 
-    return JsonResponse({
-        'authenticated': False,
-        'username': '',
-        'email': '',
-    })
+        return JsonResponse({
+            'authenticated': False,
+            'username': '',
+            'email': '',
+        })
+    except Exception as exc:
+        return JsonResponse({'error': str(exc)}, status=500)
 
 
 @login_required
@@ -192,18 +195,21 @@ def api_login(request):
 
     user_record = _resolve_user(identifier)
     username = user_record.username if user_record else identifier
-    user = authenticate(request, username=username, password=password)
+    try:
+        user = authenticate(request, username=username, password=password)
 
-    if user is None:
-        return JsonResponse({'error': 'Invalid credentials.'}, status=400)
+        if user is None:
+            return JsonResponse({'error': 'Invalid credentials.'}, status=400)
 
-    login(request, user)
-    _log_activity(user, 'login', details={'identifier': identifier})
-    return JsonResponse({
-        'message': 'Login successful.',
-        'username': user.username,
-        'email': user.email,
-    })
+        login(request, user)
+        _log_activity(user, 'login', details={'identifier': identifier})
+        return JsonResponse({
+            'message': 'Login successful.',
+            'username': user.username,
+            'email': user.email,
+        })
+    except Exception as exc:
+        return JsonResponse({'error': str(exc)}, status=500)
 
 
 @csrf_exempt
@@ -411,7 +417,7 @@ def get_agora_token(request):
     if not channel_name:
         return JsonResponse({'error': 'Missing channelName'}, status=400)
 
-    uid = random.randint(1, 230)  # Unique ID for each user
+    uid = random.randint(100000, 999999)  # Unique ID for each user
     role = 1  # 1 for publisher
     expire_time = 3600  # Token expiry in seconds
 
