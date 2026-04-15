@@ -17,5 +17,6 @@ urlpatterns = [
     path('api/auth/logout/', views.api_logout, name='api_logout'),
     path('api/activity/log/', views.api_activity_log, name='api_activity_log'),
     path('api/rooms/join/', views.api_join_room, name='api_join_room'),
+    path('api/rooms/<str:meeting_id>/leave/', views.api_leave_room, name='api_leave_room'),
     path('api/rooms/<str:meeting_id>/', views.room_detail_view, name='api_room_detail'),
 ]

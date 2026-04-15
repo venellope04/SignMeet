@@ -2,6 +2,7 @@
 import sys
 import os
 import json
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 # Add the signmeet directory to the Python path
@@ -43,6 +44,7 @@ class SignDetectionConsumer(AsyncWebsocketConsumer):
                 participant_name = 'Guest User'
 
         self.participant_name = participant_name[:80]
+        self.last_logged_translation = ''
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
         print("WebSocket connected for sign detection")
@@ -57,6 +59,7 @@ class SignDetectionConsumer(AsyncWebsocketConsumer):
                 detector = get_detector()
                 print(f"Received bytes data length: {len(bytes_data)}")
                 translation = detector(bytes_data)
+                await self.log_translation(translation)
                 payload = {
                     'type': 'translation',
                     'translation': translation,
@@ -93,3 +96,32 @@ class SignDetectionConsumer(AsyncWebsocketConsumer):
             'participant': event['participant'],
             'origin': 'remote',
         }))
+
+    @database_sync_to_async
+    def log_translation(self, translation):
+        translation = (translation or '').strip()
+
+        if not translation or translation == '[Error]' or translation == self.last_logged_translation:
+            return
+
+        self.last_logged_translation = translation
+
+        try:
+            from conferencing.models import Room, TranslationLog
+
+            room = Room.objects.filter(meeting_id__iexact=self.meeting_id).first()
+            if room is None:
+                return
+
+            user = self.scope.get('user')
+            if not user or not getattr(user, 'is_authenticated', False):
+                user = None
+
+            TranslationLog.objects.create(
+                room=room,
+                user=user,
+                participant_name=self.participant_name,
+                translated_text=translation[:255],
+            )
+        except Exception as exc:
+            print(f"Error logging translation: {exc}")

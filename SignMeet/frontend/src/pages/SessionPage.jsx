@@ -360,9 +360,13 @@ function SessionPage() {
     }
   };
 
-  const leaveRoom = () => {
+  const leaveRoom = async () => {
     stopDetection();
     stopLocalPreview();
+    await fetch(`/api/rooms/${meetingId}/leave/`, {
+      method: 'POST',
+      credentials: 'include'
+    }).catch(() => {});
     navigateToThankYou('left');
   };
 

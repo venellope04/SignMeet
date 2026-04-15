@@ -25,12 +25,63 @@ class Room(models.Model):
         return self.name
 
 
+class Participant(models.Model):
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.CASCADE,
+        related_name='participants',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='meeting_participations',
+    )
+    display_name = models.CharField(max_length=120)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    left_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-joined_at']
+
+    def __str__(self):
+        return f'{self.display_name} in {self.room}'
+
+
+class TranslationLog(models.Model):
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.CASCADE,
+        related_name='translation_logs',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='translation_logs',
+    )
+    participant_name = models.CharField(max_length=120, blank=True)
+    translated_text = models.CharField(max_length=255)
+    confidence = models.FloatField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.room} - {self.translated_text}'
+
+
 class ActivityLog(models.Model):
     EVENT_CHOICES = [
         ('signup', 'Signup'),
         ('login', 'Login'),
         ('logout', 'Logout'),
         ('join_room', 'Join Room'),
+        ('leave_room', 'Leave Room'),
         ('click_action', 'Click Action'),
     ]
 

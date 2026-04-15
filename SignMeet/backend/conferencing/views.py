@@ -3,10 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import redirect, render
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from agora_token_builder import RtcTokenBuilder
-from .models import ActivityLog, Room
+from .models import ActivityLog, Participant, Room
 import time
 import random
 import json
@@ -318,11 +319,28 @@ def api_join_room(request):
         },
     )
 
+    Participant.objects.filter(
+        room=room,
+        user=request.user,
+        is_active=True,
+        left_at__isnull=True,
+    ).update(
+        is_active=False,
+        left_at=timezone.now(),
+    )
+
+    Participant.objects.create(
+        room=room,
+        user=request.user,
+        display_name=display_name,
+    )
+
     return JsonResponse({
         'roomName': room.name,
         'meetingId': room.meeting_id,
         'meetingLink': _get_room_link(request, room),
         'displayName': display_name,
+        'activeParticipants': room.participants.filter(is_active=True, left_at__isnull=True).count(),
     })
 
 
@@ -338,6 +356,40 @@ def room_detail_view(request, meeting_id):
         'roomName': room.name,
         'meetingId': room.meeting_id,
         'meetingLink': _get_room_link(request, room),
+        'activeParticipants': room.participants.filter(is_active=True, left_at__isnull=True).count(),
+    })
+
+
+@csrf_exempt
+@login_required
+@require_POST
+def api_leave_room(request, meeting_id):
+    room = Room.objects.filter(meeting_id__iexact=meeting_id).first()
+
+    if room is None:
+        return JsonResponse({'error': 'Room not found.'}, status=404)
+
+    now = timezone.now()
+    updated = Participant.objects.filter(
+        room=room,
+        user=request.user,
+        is_active=True,
+        left_at__isnull=True,
+    ).update(
+        is_active=False,
+        left_at=now,
+    )
+
+    _log_activity(
+        request.user,
+        'leave_room',
+        room=room,
+        details={'participants_marked_left': updated},
+    )
+
+    return JsonResponse({
+        'message': 'Left room successfully.',
+        'activeParticipants': room.participants.filter(is_active=True, left_at__isnull=True).count(),
     })
 
 # Video Call Room View
