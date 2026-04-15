@@ -11,6 +11,7 @@ FROM python:3.9-bullseye
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
 
 # apt dependencies for Python packages and OpenCV
 RUN echo "deb http://mirrors.tuna.tsinghua.edu.cn/debian bullseye main" > /etc/apt/sources.list && \
@@ -35,6 +36,10 @@ RUN pip install torch torchvision torchaudio --index-url https://download.pytorc
 
 # Copy backend code
 COPY backend/ ./backend
+COPY ml_models/ ./ml_models
+
+# Run migrations
+RUN PYTHONPATH=/app DJANGO_SETTINGS_MODULE=SignMeet.settings python backend/manage.py migrate
 
 # Optionally include frontend build output in backend for static hosting (if using Django static)
 RUN mkdir -p /app/backend/frontend_dist
@@ -42,4 +47,5 @@ COPY --from=frontend-build /app/frontend/dist /app/backend/frontend_dist
 
 EXPOSE 8000
 
-CMD ["python", "backend/manage.py", "runserver", "0.0.0.0:8000"]
+ENV PYTHONPATH=/app
+CMD ["daphne", "SignMeet.asgi:application", "--bind", "0.0.0.0", "--port", "8000"]

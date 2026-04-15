@@ -44,10 +44,30 @@ class SignDetectionConsumer(AsyncWebsocketConsumer):
 
         self.participant_name = participant_name[:80]
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+
+        # Broadcast that a new participant joined
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'participant_joined',
+                'participant_name': self.participant_name,
+                'channel_name': self.channel_name,
+            }
+        )
+
         await self.accept()
         print("WebSocket connected for sign detection")
 
     async def disconnect(self, close_code):
+        # Broadcast that a participant left
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'participant_left',
+                'participant_name': self.participant_name,
+                'channel_name': self.channel_name,
+            }
+        )
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         print("WebSocket disconnected")
 
@@ -92,4 +112,22 @@ class SignDetectionConsumer(AsyncWebsocketConsumer):
             'translation': event['translation'],
             'participant': event['participant'],
             'origin': 'remote',
+        }))
+
+    async def participant_joined(self, event):
+        if event.get('channel_name') == self.channel_name:
+            return
+
+        await self.send(text_data=json.dumps({
+            'type': 'participant_joined',
+            'participant_name': event['participant_name'],
+        }))
+
+    async def participant_left(self, event):
+        if event.get('channel_name') == self.channel_name:
+            return
+
+        await self.send(text_data=json.dumps({
+            'type': 'participant_left',
+            'participant_name': event['participant_name'],
         }))
